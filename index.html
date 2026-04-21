@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Dò Số - Firebase</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&family=Playfair+Display:ital,wght@1,600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #settingsModal .card {
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Login Overlay */
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .login-card {
+            max-width: 350px;
+            width: 90%;
+            animation: slideUp 0.4s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #312e81 0%, transparent 40%),
+                radial-gradient(circle at bottom left, #0f766e 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .day-btn {
+                font-size: 0.8rem;
+                padding: 8px 2px;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .premium-badge {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 15px;
+            margin-top: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .premium-badge span {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .premium-badge b {
+            font-family: 'Playfair Display', serif;
+            font-size: 12px;
+            color: #38bdf8;
+            font-style: italic;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .form-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #cbd5e1;
+            gap: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            text-align: left;
+            appearance: none;
+            -webkit-appearance: none;
+            color-scheme: dark;
+        }
+
+        /* Fix cho ô ngày tháng trên iOS/Mobile */
+        input[type="date"] {
+            display: block;
+            min-height: 48px;
+        }
+
+        input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+            margin-left: 0;
+            min-height: 1.2em;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 14px;
+            top: 42px;
+            color: var(--text-muted);
+            font-size: 16px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Ẩn icon lịch mặc định của trình duyệt */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        /* Scan Button Styling */
+        .btn-scan {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px dashed var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-scan:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+
+        .scan-result-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+            word-wrap: break-word;
+        }
+
+        .scan-result-box img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* List Styling */
+        .list-section {
+            width: 100%;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .list-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .ticket-item {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            /* Cho phép giãn theo chiều cao */
+            animation: slideIn 0.4s ease-out;
+            transition: all 0.3s;
+            gap: 15px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .ticket-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Tránh tràn chữ */
+        .ticket-info h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .ticket-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .ticket-info .result-detail {
+            color: var(--success);
+            font-weight: 500;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .ticket-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+            /* Không cho xuống dòng trong badge */
+            display: inline-block;
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .badge-win {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+            box-shadow: 0 0 15px var(--success);
+        }
+
+        .badge-lost {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            opacity: 0.7;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            margin-left: 10px;
+            transition: color 0.2s;
+        }
+
+        .btn-delete:hover {
+            color: var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Notification Button */
+        .btn-notify {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-notify:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-notify.active {
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .btn-clear {
+            background: transparent;
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            color: #ff7675;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 118, 117, 0.1);
+            border-color: #ff7675;
+            box-shadow: 0 0 10px rgba(255, 118, 117, 0.2);
+        }
+
+        /* Shortcut Buttons */
+        .day-shortcuts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .day-btn:last-child {
+            grid-column: 2;
+            /* Luôn đưa nút Chủ Nhật vào giữa */
+        }
+
+        @media (min-width: 600px) {
+            .day-shortcuts {
+                max-width: 400px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        .day-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 4px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .day-btn:hover {
+            background: rgba(108, 92, 231, 0.2);
+            border-color: #6c5ce7;
+        }
+
+        .day-btn.active {
+            background: #6c5ce7;
+            border-color: #6c5ce7;
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.4);
+        }
+
+        .form-group i.toggle-password {
+            position: absolute;
+            right: 12px !important;
+            left: auto !important;
+            top: 13px !important;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.3s;
+            z-index: 100 !important;
+            pointer-events: auto !important;
+        }
+
+        .form-group i.toggle-password:hover {
+            color: var(--primary);
+        }
+
+        /* CMD Terminal Styling */
+        .terminal-window {
+            background: #000;
+            color: #4ade80;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 0 0 10px 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.1);
+            scrollbar-width: thin;
+            scrollbar-color: #333 #000;
+        }
+
+        .terminal-window::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .terminal-window::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .terminal-header {
+            background: #1a1a1a;
+            padding: 8px 15px;
+            border-radius: 10px 10px 0 0;
+            font-size: 11px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #333;
+            border-bottom: none;
+            margin-top: 15px;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: #4ade80;
+            animation: terminalBlink 1s infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        @keyframes terminalBlink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .vps-status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            box-shadow: 0 0 8px #10b981;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay">
+        <div class="card login-card" style="max-width: 400px; width: 100%;">
+            <!-- Login View -->
+            <div id="loginView">
+                <div class="header" style="margin-bottom: 25px;">
+                    <h1 style="font-size: 24px; font-family: 'Outfit';">ĐĂNG NHẬP</h1>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">HỆ THỐNG AUTO DÒ SỐ</p>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Tên đăng nhập</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-user" style="top: 13px;"></i>
+                        <input type="text" id="loginUser" class="form-control" placeholder="Username"
+                            style="padding-left: 40px;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Mật khẩu</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-lock" style="top: 13px;"></i>
+                        <input type="password" id="loginPass" class="form-control" placeholder="••••••••"
+                            style="padding-left: 40px; padding-right: 40px;">
+                        <i class="fa-solid fa-eye toggle-password" data-target="loginPass"></i>
+                    </div>
+                </div>
+                <button id="btnLogin" class="btn-submit"
+                    style="margin-top: 10px; font-weight: 700; letter-spacing: 1px;">VÀO HỆ THỐNG</button>
+                <p style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-muted);">
+                    Chưa có tài khoản? <a href="#" id="linkToRegister"
+                        style="color: var(--primary); text-decoration: none; font-weight: 600;">Đăng ký ngay</a>
+                </p>
+            </div>
+
+            <!-- Register View -->
+            <div id="registerView" style="display: none;">
+                <div class="header" style="margin-bottom: 25px;">
+                    <h1 style="font-size: 24px; font-family: 'Outfit';">ĐĂNG KÝ</h1>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">Tham gia hệ thống Auto Dò Số
+                        ngay hôm nay</p>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Họ và Tên</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-id-card" style="top: 13px;"></i>
+                        <input type="text" id="regName" class="form-control" placeholder="Tên hiển thị"
+                            style="padding-left: 40px;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Tên đăng nhập</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-user" style="top: 13px;"></i>
+                        <input type="text" id="regUser" class="form-control" placeholder="Username (viết liền)"
+                            style="padding-left: 40px;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Mật khẩu</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-lock" style="top: 13px;"></i>
+                        <input type="password" id="regPass" class="form-control" placeholder="Mật khẩu bảo mật"
+                            style="padding-left: 40px; padding-right: 40px;">
+                        <i class="fa-solid fa-eye toggle-password" data-target="regPass"></i>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Xác nhận mật khẩu</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-shield-check" style="top: 13px;"></i>
+                        <input type="password" id="regPassConfirm" class="form-control" placeholder="Nhập lại mật khẩu"
+                            style="padding-left: 40px; padding-right: 40px;">
+                        <i class="fa-solid fa-eye toggle-password" data-target="regPassConfirm"></i>
+                    </div>
+                </div>
+                <button id="btnRegister" class="btn-submit"
+                    style="margin-top: 5px; font-weight: 700; letter-spacing: 1px; background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">ĐĂNG
+                    KÝ TÀI KHOẢN</button>
+                <p style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-muted);">
+                    Đã có tài khoản? <a href="#" id="linkToLogin"
+                        style="color: var(--primary); text-decoration: none; font-weight: 600;">Quay lại đăng nhập</a>
+                </p>
+            </div>
+
+            <p id="loginError"
+                style="color: var(--danger); font-size: 13px; margin-top: 15px; text-align: center; display: none; font-weight: 500;">
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Form Card -->
+        <div class="card">
+            <div class="header">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="flex: 1; display: flex; justify-content: flex-start;">
+                        <button id="btnLogoutMain" title="Đăng xuất"
+                            style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px; border-radius: 10px; cursor: pointer; transition: all 0.3s;">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                    <div style="flex: 2; display: flex; flex-direction: column; align-items: center;">
+                        <h1
+                            style="font-size: 2.4rem; font-weight: 900; font-family: 'Outfit', sans-serif; background: linear-gradient(135deg, #fcd34d 0%, #ffffff 50%, #fbbf24 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 15px rgba(251, 191, 36, 0.2); letter-spacing: 2px; position: relative; margin: 0; animation: titleGlow 3s ease-in-out infinite alternate; text-align: center; white-space: nowrap;">
+                            AUTO DÒ SỐ</h1>
+                        <div
+                            style="height: 2px; width: 60px; background: linear-gradient(90deg, transparent, #fbbf24, transparent); margin-top: 5px;">
+                        </div>
+                    </div>
+                    <div style="flex: 1; display: flex; justify-content: flex-end; gap: 8px;">
+                        <button id="btnOpenSettings" title="Cài đặt"
+                            style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 8px; border-radius: 10px; cursor: pointer; transition: all 0.3s;">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 10px;">
+                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                        <div class="premium-badge">
+                            <span>VER 3.1</span>
+                        </div>
+                        <div class="premium-badge"
+                            style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                            <span style="font-size: 0.8rem; opacity: 0.9;">Exclusive by:</span>
+                            <b style="color: #fbbf24; font-size: 1.2rem; text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);">Phương
+                                Bảo</b>
+                        </div>
+                    </div>
+                    <p
+                        style="font-size: 0.95rem; margin-top: 8px; font-style: italic; color: #fcd34d; text-align: center; font-weight: 600; text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);">
+                        Chúc bạn may mắn trúng giải! 🍀</p>
+                </div>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="settingsModal" class="modal"
+                style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
+                <div class="card" style="max-width: 400px; margin: 20px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="font-family: 'Outfit'; font-size: 20px;"><i class="fa-solid fa-sliders"></i> Cài Đặt
+                            Cá Nhân</h2>
+                        <button class="close-settings"
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;"><i
+                                class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label>Bark Key (iOS Notification) <i class="fa-solid fa-circle-info"
+                                style="font-size: 10px; opacity: 0.5;"
+                                title="Dùng để nhận thông báo trúng giải riêng trên iPhone của bạn"></i></label>
+                        <div style="position: relative;">
+                            <i class="fa-solid fa-key" style="top: 13px;"></i>
+                            <input type="text" id="barkKeyInput" class="form-control" style="padding-left: 40px;"
+                                placeholder="Dán Bark Key của bạn vào đây...">
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                            Bạn cần tải app Bark trên iPhone để lấy Key:
+                            <a href="https://apps.apple.com/vn/app/bark-custom-notifications/id1403753865?l=vi"
+                                target="_blank"
+                                style="color: var(--primary); text-decoration: none; font-weight: 600;">Tải tại App
+                                Store <i class="fa-solid fa-up-right-from-square" style="font-size: 9px;"></i></a>
+                        </p>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+                    <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--primary);"><i
+                            class="fa-solid fa-shield-halved"></i> Đổi Mật Khẩu</h3>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Mật khẩu cũ</label>
+                        <input type="password" id="oldPass" class="form-control" placeholder="Nhập để xác nhận">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Mật khẩu mới</label>
+                        <div style="position: relative;">
+                            <i class="fa-solid fa-key"
+                                style="top: 13px; left: 12px; position: absolute; color: var(--text-muted);"></i>
+                            <input type="password" id="newPass" class="form-control"
+                                placeholder="Mật khẩu cực kỳ bí mật" style="padding-left: 40px; padding-right: 40px;">
+                            <i class="fa-solid fa-eye toggle-password" data-target="newPass"></i>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label>Xác nhận mật khẩu mới</label>
+                        <div style="position: relative;">
+                            <i class="fa-solid fa-check-double"
+                                style="top: 13px; left: 12px; position: absolute; color: var(--text-muted);"></i>
+                            <input type="password" id="confirmNewPass" class="form-control"
+                                placeholder="Xác nhận lại mật khẩu mới"
+                                style="padding-left: 40px; padding-right: 40px;">
+                            <i class="fa-solid fa-eye toggle-password" data-target="confirmNewPass"></i>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btnSaveSettings" class="btn-submit" style="flex: 2;">LƯU CÀI ĐẶT</button>
+                        <button id="btnChangePass" class="btn-submit"
+                            style="flex: 1; background: var(--warning); color: black;">ĐỔI MK</button>
+                    </div>
+                    <p style="font-size: 10px; color: var(--text-muted); margin-top: 15px; text-align: center;">Thông
+                        báo trúng giải sẽ được gửi đồng thời tới App trên trình duyệt và thiết bị iOS có Bark Key này.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Import JSON Modal -->
+            <div id="importJsonModal" class="modal"
+                style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
+                <div class="card" style="max-width: 500px; margin: 20px; width: 90%;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="font-family: 'Outfit'; font-size: 20px;"><i class="fa-solid fa-file-import"></i> Nhập
+                            Dữ Liệu JSON</h2>
+                        <button class="close-import-json"
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;"><i
+                                class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Dán nội dung JSON từ AI vào đây:</label>
+                        <textarea id="jsonInputArea" class="form-control"
+                            style="height: 150px; font-family: monospace; font-size: 12px; padding: 10px; resize: none; line-height: 1.4;"
+                            placeholder='{ "thông_tin_chung": ... }'></textarea>
+                    </div>
+
+                    <div
+                        style="background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 20px;">
+                        <h4 style="font-size: 13px; color: #a78bfa; margin-bottom: 8px;"><i
+                                class="fa-solid fa-wand-magic-sparkles"></i> Mẹo Prompt (Hướng dẫn):</h4>
+                        <p style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">Gửi ảnh vé số cho AI
+                            (Gemini/ChatGPT) và sử dụng prompt sau để lấy đúng định dạng:</p>
+                        <div
+                            style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 5px; margin-top: 8px; position: relative;">
+                            <code id="promptCode"
+                                style="font-size: 10px; color: #4ade80; display: block; white-space: pre-wrap;">Hãy trích xuất thông tin TẤT CẢ các vé số có trong ảnh này theo các quy tắc sau:
+1. Mỗi tờ vé vật lý chỉ được lấy DUY NHẤT một số dự thưởng.
+2. Nếu trên 1 tờ vé có nhiều dãy số (số to, số nhỏ), hãy luôn ƯU TIÊN chọn dãy số TO NHẤT và rõ ràng nhất ở giữa vé.
+3. Liệt kê đầy đủ tất cả các tờ vé vật lý có trong ảnh, kể cả khi chúng trùng số nhau.
+
+Trả về định dạng JSON chính xác như sau:
+{
+  "thông_tin_chung": {
+    "đài_phát_hành": "Tên tỉnh",
+    "ngày_mở_thưởng": "DD-MM-YYYY",
+    "loại_vé": "...",
+    "giá_vé": "10.000đ",
+    "giải_đặc_biệt": "2 Tỷ"
+  },
+  "danh_sách_vé": [
+    { "số_dự_thưởng": "634806", "ký_hiệu_sê_ri": "A" },
+    { "số_dự_thưởng": "634806", "ký_hiệu_sê_ri": "B" },
+    { "số_dự_thưởng": "123456", "ký_hiệu_sê_ri": "C" }
+  ]
+}</code>
+                            <button id="btnCopyPrompt"
+                                style="position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.1); border: none; color: white; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px;">Copy</button>
+                        </div>
+                    </div>
+
+                    <button id="btnConfirmImportJson" class="btn-submit"
+                        style="background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);">XÁC NHẬN NHẬP DỮ
+                        LIỆU</button>
+                </div>
+            </div>
+
+
+            <div class="day-shortcuts" id="dayShortcuts">
+                <button class="day-btn" data-day="1">T2</button>
+                <button class="day-btn" data-day="2">T3</button>
+                <button class="day-btn" data-day="3">T4</button>
+                <button class="day-btn" data-day="4">T5</button>
+                <button class="day-btn" data-day="5">T6</button>
+                <button class="day-btn" data-day="6">T7</button>
+                <button class="day-btn" data-day="0">CN</button>
+            </div>
+
+            <form id="lotteryForm">
+                <div class="form-group">
+                    <label for="ngay">Ngày xổ số <span id="dayLabel"
+                            style="font-weight: normal; font-size: 0.9em; opacity: 0.8;"></span></label>
+                    <i class="fa-regular fa-calendar"></i>
+                    <input type="date" id="ngay" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tinh">Chọn đài / Tỉnh</label>
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <select id="tinh" class="form-control" required>
+                        <option value="16">Vĩnh Long</option>
+                        <option value="1" selected>Bình Dương</option>
+                        <option value="19">Trà Vinh</option>
+                        <option value="2">TP.HCM</option>
+                        <option value="3">Đồng Tháp</option>
+                        <option value="4">Cà Mau</option>
+                        <option value="5">Tiền Giang</option>
+                        <option value="6">Kiên Giang</option>
+                        <option value="7">Đà Lạt</option>
+                        <option value="8">Tây Ninh</option>
+                        <option value="9">An Giang</option>
+                        <option value="10">Bình Thuận</option>
+                        <option value="11">Sóc Trăng</option>
+                        <option value="12">Cần Thơ</option>
+                        <option value="13">Đồng Nai</option>
+                        <option value="14">Vũng Tàu</option>
+                        <option value="15">Bến Tre</option>
+                        <option value="17">Long An</option>
+                        <option value="18">Hậu Giang</option>
+                        <option value="20">Bình Phước</option>
+                        <option value="21">Bạc Liêu</option>
+                    </select>
+                </div>
+
+                <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="so">Số vé</label>
+                        <i class="fa-solid fa-ticket"></i>
+                        <input type="text" id="so" class="form-control" placeholder="Nhập 6 số" maxlength="6"
+                            inputmode="numeric" pattern="\d*" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sl">SL vé</label>
+                        <i class="fa-solid fa-layer-group"></i>
+                        <input type="number" id="sl" class="form-control" value="1" min="1" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" style="margin-bottom: 10px;">
+                    <i class="fa-solid fa-plus"></i> Thêm Vé Vào Danh Sách
+                </button>
+
+
+
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                <button type="button" class="btn-scan" id="btnScanTrigger">
+                    <i class="fa-solid fa-camera"></i> Quét Ảnh Vé Số (Nhập Nhanh)
+                </button>
+                <button type="button" class="btn-scan" id="btnOpenImportJson"
+                    style="margin-top: -5px; margin-bottom: 20px; background: rgba(79, 70, 229, 0.1); border-color: rgba(79, 70, 229, 0.3); color: #a78bfa;">
+                    <i class="fa-solid fa-file-import"></i> Nhập JSON từ AI (Gemini/ChatGPT)
+                </button>
+
+                <div id="scanLoading"
+                    style="display: none; color: var(--warning); text-align: center; font-size: 13px; margin-bottom: 15px; font-weight: 500;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích ảnh...
+                </div>
+                <div id="scanResultBox" class="scan-result-box">
+                    <div id="scanStepTitle" style="text-align: center; color: var(--warning); font-weight: 700; margin-bottom: 10px; font-size: 14px; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 8px; border: 1px dashed var(--warning);">
+                        <i class="fa-solid fa-circle-exclamation"></i> Kiểm tra lại số trước khi nhập nha
+                    </div>
+                    <div id="scanImageContainer" style="position: relative; text-align: center;">
+                        <img id="scanPreview" src="" alt=""
+                            style="max-height: 200px; width: auto; max-width: 100%; border-radius: 5px; margin-bottom: 10px; background: rgba(0,0,0,0.2);">
+                        <button type="button" id="btnRotateImage"
+                            style="position: absolute; bottom: 20px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; z-index: 10;"
+                            title="Xoay ảnh 90 độ">
+                            <i class="fa-solid fa-rotate-right"></i> Xoay
+                        </button>
+                    </div>
+                    <div id="scanText" style="line-height: 1.5;"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="list-section">
+            <div class="list-header">
+                <h2>Vé Đã Thêm <span id="ticketCount"
+                        style="font-size: 12px; opacity: 0.6; font-weight: 400; margin-left: 5px;">(0 vé)</span></h2>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnUserScan" class="btn-notify"
+                        style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: var(--success); font-weight: 700; font-size: 11px; padding: 5px 12px;">
+                        <i class="fa-solid fa-bolt"></i> DÒ NGAY
+                    </button>
+                    <button id="btnClearAll" class="btn-clear"><i class="fa-solid fa-trash-sweep"></i> XÓA HẾT</button>
+                </div>
+            </div>
+            <div id="ticketList">
+                <!-- Tickets will appear here -->
+                <div class="empty-state">Đang tải dữ liệu từ Firebase...</div>
+            </div>
+        </div>
+
+        <!-- Terminal Panel (CMD Style - All Users) -->
+        <div id="terminalPanel" style="margin-top: 30px; animation: slideUp 0.5s ease;">
+            <div class="card"
+                style="padding: 20px; border: 1px solid rgba(16, 185, 129, 0.2); background: rgba(15, 23, 42, 0.9);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2
+                        style="font-family: 'Outfit'; font-size: 1.1rem; color: #4ade80; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-terminal"></i> TRẠNG THÁI MÁY CHỦ (VPS)
+                    </h2>
+                    <!-- Admin Only Actions -->
+                    <div id="adminActions" style="display: none;">
+                        <button id="btnRemoteScan" class="btn-submit"
+                            style="width: auto; padding: 8px 16px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); font-size: 11px; font-weight: 700;">
+                            <i class="fa-solid fa-microchip"></i> QUÉT TẤT CẢ TÀI KHOẢN (ADMIN)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="terminal-header">
+                    <span><i class="fa-solid fa-microchip"></i> SYSTEM CONSOLE v3.2</span>
+                    <span style="display: flex; align-items: center;"><span class="vps-status-dot"></span>LIVE
+                        MONITORING</span>
+                </div>
+                <div class="terminal-window" id="vpsTerminal">
+                    <div id="terminalBody">
+                        <div style="color: #666;">[SYSTEM] Đang kết nối máy chủ...</div>
+                    </div>
+                    <div class="terminal-cursor"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+
+        // --- CẤU HÌNH FIREBASE --- 
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQWUKbzba3GB8cdiGpjKK3ZI-74PIZysA",
+            authDomain: "doso151.firebaseapp.com",
+            databaseURL: "https://doso151-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "doso151",
+            storageBucket: "doso151.firebasestorage.app",
+            messagingSenderId: "142725282351",
+            appId: "1:142725282351:web:5743887f0a8d391f2864da",
+            measurementId: "G-V99VWLNX93"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        console.log(">>> AUTO DÒ SỐ VER 3.2 - ĐÃ KÍCH HOẠT TÍNH NĂNG CON MẮT <<<");
+
+        // --- TÍNH NĂNG ẨN/HIỆN MẬT KHẨU (GLOBAL) ---
+        function initTogglePassword() {
+            document.querySelectorAll('.toggle-password').forEach(btn => {
+                // Xóa bỏ handler cũ nếu có
+                btn.onclick = null;
+                btn.onclick = function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const targetId = this.getAttribute('data-target');
+                    const targetInput = document.getElementById(targetId);
+                    if (targetInput.type === 'password') {
+                        targetInput.type = 'text';
+                        this.classList.remove('fa-eye');
+                        this.classList.add('fa-eye-slash');
+                    } else {
+                        targetInput.type = 'password';
+                        this.classList.remove('fa-eye-slash');
+                        this.classList.add('fa-eye');
+                    }
+                };
+            });
+        }
+        initTogglePassword();
+        // Gọi lại sau 2s để đảm bảo các thành phần động đã load
+        setTimeout(initTogglePassword, 2000);
+
+        let currentUser = localStorage.getItem('lottery_user');
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginError = document.getElementById('loginError');
+        const btnLogin = document.getElementById('btnLogin');
+
+        // BÀI TOÁN XÁC THỰC
+        if (currentUser) {
+            loginOverlay.style.display = "none";
+            initApp(currentUser);
+        }
+
+        btnLogin.addEventListener('click', async () => {
+            console.log("Login button clicked");
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            if (!user || !pass) {
+                showError("Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+
+            btnLogin.disabled = true;
+            btnLogin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG KIỂM TRA...';
+
+            try {
+                // Thử login qua Database
+                const snapshot = await get(ref(db, 'accounts'));
+                const accounts = snapshot.val();
+                let isValid = false;
+
+                if (accounts) {
+                    for (let id in accounts) {
+                        try {
+                            const acc = accounts[id];
+                            if (atob(acc.user).toLowerCase() === user.toLowerCase() && atob(acc.pass) === pass) {
+                                isValid = true;
+                                break;
+                            }
+                        } catch (e) { continue; }
+                    }
+                }
+
+                // Emergency Bypass for Admin (Lowercase check)
+                if (isValid || (user.toLowerCase() === "admin" && pass === "admin")) {
+                    console.log("Login success!");
+                    localStorage.setItem('lottery_user', user.toLowerCase());
+                    location.reload(); // Tải lại trang để vào hệ thống sạch sẽ
+                } else {
+                    showError("Tài khoản hoặc mật khẩu không chính xác!");
+                }
+            } catch (err) {
+                console.error("Login Error:", err);
+                showError("Lỗi kết nối database. Vui lòng thử lại!");
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.innerHTML = 'VÀO HỆ THỐNG';
+            }
+        });
+
+        function showError(msg) {
+            loginError.innerText = msg;
+            loginError.style.display = "block";
+        }
+
+        // --- CHUYỂN ĐỔI LOGIN/REGISTER ---
+        const linkToRegister = document.getElementById('linkToRegister');
+        const linkToLogin = document.getElementById('linkToLogin');
+        const loginView = document.getElementById('loginView');
+        const registerView = document.getElementById('registerView');
+
+        linkToRegister.onclick = (e) => {
+            e.preventDefault();
+            loginView.style.display = "none";
+            registerView.style.display = "block";
+            loginError.style.display = "none";
+        };
+        linkToLogin.onclick = (e) => {
+            e.preventDefault();
+            registerView.style.display = "none";
+            loginView.style.display = "block";
+            loginError.style.display = "none";
+        };
+
+        // (Logic đã được chuyển lên đầu trang để đảm bảo thực thi sớm)
+
+        // --- LOGIC ĐĂNG KÝ ---
+        const btnRegister = document.getElementById('btnRegister');
+        btnRegister.onclick = async () => {
+            const name = document.getElementById('regName').value.trim();
+            const user = document.getElementById('regUser').value.trim().toLowerCase();
+            const pass = document.getElementById('regPass').value.trim();
+            const passConfirm = document.getElementById('regPassConfirm').value.trim();
+
+            if (!name || !user || !pass || !passConfirm) {
+                showError("Vui lòng nhập đầy đủ thông tin đăng ký!");
+                return;
+            }
+
+            if (pass !== passConfirm) {
+                showError("Mật khẩu xác nhận không khớp!");
+                return;
+            }
+
+            btnRegister.disabled = true;
+            btnRegister.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
+
+            try {
+                // 1. Kiểm tra tồn tại
+                const snapshot = await get(ref(db, 'accounts'));
+                const accounts = snapshot.val();
+                let exists = false;
+                if (accounts) {
+                    for (let id in accounts) {
+                        try {
+                            if (atob(accounts[id].user).toLowerCase() === user) {
+                                exists = true;
+                                break;
+                            }
+                        } catch (e) { }
+                    }
+                }
+
+                if (exists) {
+                    showError("Tên đăng nhập này đã tồn tại!");
+                } else {
+                    // 2. Tạo tài khoản mới
+                    const payload = {
+                        name: btoa(unescape(encodeURIComponent(name))),
+                        user: btoa(user),
+                        pass: btoa(pass),
+                        createdAt: new Date().toISOString()
+                    };
+                    await push(ref(db, 'accounts'), payload);
+                    alert("Đăng ký thành công! Bạn có thể đăng nhập ngay.");
+                    linkToLogin.click();
+                }
+            } catch (err) {
+                showError("Lỗi hệ thống: " + err.message);
+            } finally {
+                btnRegister.disabled = false;
+                btnRegister.innerHTML = 'ĐĂNG KÝ TÀI KHOẢN';
+            }
+        };
+
+        function initApp(user) {
+            const ticketsRef = ref(db, `users/${user}/tickets`);
+            const settingsRef = ref(db, `users/${user}/settings`);
+
+            const provinces = {
+                "vĩnh long": 16, "vl": 16, "bình dương": 17, "bd": 17, "trà vinh": 18, "tv": 18,
+                "tp.hcm": 1, "thành phố hồ chí minh": 1, "tphcm": 1, "hcm": 1,
+                "đồng tháp": 2, "dt": 2, "cà mau": 3, "cm": 3, "tiền giang": 22, "tg": 22,
+                "kiên giang": 23, "kg": 23, "đà lạt": 24, "lâm đồng": 24, "ld": 24, "dl": 24,
+                "tây ninh": 13, "tn": 13, "an giang": 14, "ag": 14, "bình thuận": 15, "bth": 15,
+                "sóc trăng": 12, "st": 12, "cần thơ": 11, "ct": 11, "đồng nai": 10, "dn": 10,
+                "vũng tàu": 8, "vt": 8, "bến tre": 7, "bt": 7, "long an": 19, "la": 19,
+                "hậu giang": 20, "hg": 20, "bình phước": 21, "bp": 21, "bạc liêu": 9, "bl": 9
+            };
+
+            // --- HÀM ĐIỀN FORM VÀ SYNC (DÙNG CHUNG) ---
+            const fillFormAndSync = (res) => {
+                if (res.date) {
+                    const ngayInput = document.getElementById('ngay');
+                    let isoDate = res.date;
+                    if (res.date.includes('/')) {
+                        const [d, m, y] = res.date.split('/');
+                        isoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                    } else if (res.date.includes('-') && res.date.split('-')[0].length < 4) {
+                        const [d, m, y] = res.date.split('-');
+                        isoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                    }
+                    ngayInput.value = isoDate;
+                    ngayInput.dispatchEvent(new Event('change'));
+                }
+
+                if (res.foundProvinceId) {
+                    setTimeout(() => {
+                        const selectTinh = document.getElementById('tinh');
+                        if ([...selectTinh.options].some(o => o.value == res.foundProvinceId)) {
+                            selectTinh.value = res.foundProvinceId;
+                        }
+                    }, 50);
+                }
+
+                if (res.number) {
+                    let paddedSo = String(res.number).trim();
+                    if (paddedSo.length < 6) paddedSo = paddedSo.padStart(6, '0');
+                    document.getElementById('so').value = paddedSo;
+                }
+                if (res.so_luong) document.getElementById('sl').value = res.so_luong;
+            };
+
+            // --- HÀM HIỂN THỊ KẾT QUẢ AI ĐỂ XEM LẠI/CHỈNH SỬA (DÙNG CHUNG) ---
+            const displayAiResults = (processedResults, source = 'scan') => {
+                console.log("Rendering AI Results:", processedResults);
+                const scanText = document.getElementById('scanText');
+                const scanResultBox = document.getElementById('scanResultBox');
+                const scanImageContainer = document.getElementById('scanImageContainer');
+
+                scanResultBox.style.display = "block";
+                
+                // Hiện/Ẩn khung ảnh tùy vào nguồn dữ liệu
+                if (source === 'json') {
+                    scanImageContainer.style.display = "none";
+                } else {
+                    scanImageContainer.style.display = "block";
+                }
+
+                if (processedResults.length > 0) {
+                    fillFormAndSync(processedResults[0]);
+
+                    let html = `<b style="color: var(--success);"><i class="fa-solid fa-sparkles"></i> Tìm thấy ${processedResults.length} vé từ AI:</b><br>`;
+                    processedResults.forEach((res, idx) => {
+                        let displaySo = String(res.number || '??????').trim();
+                        if (displaySo !== '??????' && displaySo.length < 6) displaySo = displaySo.padStart(6, '0');
+
+                        const confidenceBadge = res.isConfidenceHigh === false
+                            ? `<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.3); margin-left: 5px;"><i class="fa-solid fa-triangle-exclamation"></i> Cần kiểm tra lại</span>`
+                            : "";
+
+                        html += `
+                        <div class="ai-result-card" data-idx="${idx}" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--primary); position: relative;">
+                            <button type="button" class="btn-remove-ai" data-idx="${idx}" style="position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.2s;" title="Xóa kết quả này">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="font-size: 13px; line-height: 1.5; flex: 1;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <input type="text" class="ai-number-input" data-idx="${idx}" value="${displaySo}" maxlength="6" style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255,255,255,0.2); color: #ff7675; font-size: 22px; font-weight: bold; width: 140px; border-radius: 8px; padding: 5px 10px; letter-spacing: 3px; outline: none; text-align: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);" title="Bạn có thể sửa số vé tại đây" inputmode="numeric">
+                                        ${confidenceBadge}
+                                    </div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--text-muted);">
+                                        <span><i class="fa-solid fa-map-location-dot" style="color: #38bdf8; width: 14px;"></i> ${res.foundProvinceName}</span>
+                                        <span><i class="fa-solid fa-calendar-day" style="color: #a78bfa; width: 14px;"></i> ${res.date || '??/??/????'}</span>
+                                    </div>
+                                    <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 5px; border-radius: 8px;">
+                                        <span style="font-size: 13px; font-weight: 700; color: white; letter-spacing: 0.5px;">SỐ LƯỢNG:</span> 
+                                        <input type="number" class="ai-qty-input" data-idx="${idx}" value="${res.so_luong || 1}" min="1" style="width: 60px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); color: #fbbf24; font-size: 16px; font-weight: bold; border-radius: 6px; padding: 4px; outline: none; text-align: center;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 25px;">
+                                    <button type="button" class="btn-use-ai" data-idx="${idx}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 700; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);">CHỌN</button>
+                                    <button type="button" class="btn-add-ai" data-idx="${idx}" style="background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 700; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);">THÊM</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    });
+
+                    if (processedResults.length > 1) {
+                        html += `<button type="button" id="btnAddAllAi" style="width:100%; margin-top:15px; padding:12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color:white; border:none; border-radius:12px; font-size:14px; font-weight: 700; cursor:pointer; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'"><i class="fa-solid fa-plus-circle"></i> THÊM TẤT CẢ ${processedResults.length} VÉ VÀO DANH SÁCH</button>`;
+                    }
+
+                    scanText.innerHTML = html;
+
+                    // Gán sự kiện cho các nút
+                    scanText.querySelectorAll('.btn-remove-ai').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const card = btn.closest('.ai-result-card');
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.9)';
+                            setTimeout(() => {
+                                card.remove();
+                                if (scanText.querySelectorAll('.ai-result-card').length === 0) {
+                                    scanText.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:10px;">Đã xóa hết kết quả AI.</div>';
+                                }
+                            }, 300);
+                        });
+                    });
+
+                    scanText.querySelectorAll('.btn-use-ai').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const idx = btn.getAttribute('data-idx');
+                            const parent = btn.closest('.ai-result-card');
+                            const number = parent.querySelector('.ai-number-input').value;
+                            const qty = parent.querySelector('.ai-qty-input').value;
+
+                            fillFormAndSync({ ...processedResults[idx], number: number, so_luong: qty });
+                            btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chọn';
+                            setTimeout(() => btn.innerHTML = 'CHỌN', 1500);
+                        });
+                    });
+
+                    scanText.querySelectorAll('.btn-add-ai').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const idx = btn.getAttribute('data-idx');
+                            const parent = btn.closest('.ai-result-card');
+                            const res = processedResults[idx];
+                            const inputNumber = parent.querySelector('.ai-number-input').value;
+                            const inputQty = parent.querySelector('.ai-qty-input').value;
+
+                            if (!inputNumber || !res.foundProvinceId || !res.date) {
+                                alert("Dữ liệu vé không đầy đủ để thêm nhanh!");
+                                return;
+                            }
+
+                            let formattedDate = res.date;
+                            if (res.date.includes('/')) {
+                                const parts = res.date.split('/');
+                                formattedDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                            }
+
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+                            try {
+                                let finalSo = String(inputNumber).trim();
+                                if (finalSo.length < 6) finalSo = finalSo.padStart(6, '0');
+
+                                await checkAndAddTicket(finalSo, formattedDate, res.foundProvinceId, res.foundProvinceName, parseInt(inputQty) || 1);
+                                btn.innerHTML = '<i class="fa-solid fa-check"></i> XONG';
+                                btn.style.background = '#64748b';
+                                setTimeout(() => {
+                                    parent.style.opacity = '0';
+                                    setTimeout(() => parent.remove(), 300);
+                                }, 1000);
+                            } catch (e) {
+                                alert("Lỗi khi thêm: " + e.message);
+                                btn.disabled = false;
+                                btn.innerHTML = 'THÊM';
+                            }
+                        });
+                    });
+
+                    const btnAddAll = scanText.querySelector('#btnAddAllAi');
+                    if (btnAddAll) {
+                        btnAddAll.addEventListener('click', async () => {
+                            const activeCards = scanText.querySelectorAll('.ai-result-card');
+                            if (activeCards.length === 0) return;
+
+                            btnAddAll.disabled = true;
+                            btnAddAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG THÊM...';
+
+                            for (let card of activeCards) {
+                                const idx = card.getAttribute('data-idx');
+                                const res = processedResults[idx];
+                                const inputNumber = card.querySelector('.ai-number-input').value;
+                                const inputQty = card.querySelector('.ai-qty-input').value;
+
+                                if (inputNumber && res.foundProvinceId && res.date) {
+                                    let finalSo = String(inputNumber).trim();
+                                    if (finalSo.length < 6) finalSo = finalSo.padStart(6, '0');
+
+                                    let formattedDate = res.date.includes('/') ? res.date.replace(/\//g, '-') : res.date;
+                                    await checkAndAddTicket(finalSo, formattedDate, res.foundProvinceId, res.foundProvinceName, parseInt(inputQty) || 1);
+                                }
+                            }
+                            btnAddAll.innerHTML = '<i class="fa-solid fa-check"></i> ĐÃ THÊM TẤT CẢ!';
+                            btnAddAll.style.background = '#64748b';
+                            setTimeout(() => {
+                                scanText.innerHTML = '<div style="text-align:center; color:var(--success); padding:10px;"><i class="fa-solid fa-circle-check"></i> Đã hoàn tất thêm toàn bộ vé!</div>';
+                            }, 1500);
+                        });
+                    }
+                } else {
+                    scanText.innerHTML = `<b style="color: var(--warning);">Không tìm thấy dữ liệu khả dụng!</b>`;
+                }
+            };
+
+            // --- BARK SETTINGS LOGIC ---
+            const btnOpenSettings = document.getElementById('btnOpenSettings');
+            const settingsModal = document.getElementById('settingsModal');
+            const btnSaveSettings = document.getElementById('btnSaveSettings');
+            const barkKeyInput = document.getElementById('barkKeyInput');
+            const closeSettings = document.querySelector('.close-settings');
+
+            // Load Bark Key từ node của User
+            get(child(ref(db), `users/${user}/settings/bark_key`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    barkKeyInput.value = snapshot.val();
+                }
+            });
+
+            btnOpenSettings.onclick = () => settingsModal.style.display = "flex";
+            closeSettings.onclick = () => settingsModal.style.display = "none";
+            window.onclick = (e) => { if (e.target == settingsModal) settingsModal.style.display = "none"; }
+
+            btnSaveSettings.onclick = async () => {
+                const newKey = barkKeyInput.value.trim();
+                localStorage.setItem('bark_key', newKey);
+
+                // Sync to Firebase
+                try {
+                    const updates = {};
+                    updates['users/' + user + '/settings/bark_key'] = newKey;
+                    updates['users/' + user + '/settings/lastUpdated'] = Date.now();
+                    // Cũng lưu bản copy vào fcm_tokens cho vps_checker dễ quét
+                    const deviceId = btoa(navigator.userAgent).substring(0, 20);
+                    updates['fcm_tokens/' + deviceId + '/bark_key'] = newKey;
+
+                    await update(ref(db), updates);
+
+                    alert("Đã lưu và đồng bộ cấu hình Bark Key!");
+                    settingsModal.style.display = "none";
+                } catch (err) {
+                    console.error("Sync error:", err);
+                    alert("Đã lưu tại máy nhưng lỗi khi đồng bộ database: " + err.message);
+                }
+            };
+
+            // --- LOGIC ĐỔI MẬT KHẨU ---
+            const btnChangePass = document.getElementById('btnChangePass');
+            btnChangePass.onclick = async () => {
+                const oldPass = document.getElementById('oldPass').value.trim();
+                const newPass = document.getElementById('newPass').value.trim();
+                const confirmNewPass = document.getElementById('confirmNewPass').value.trim();
+
+                if (!oldPass || !newPass || !confirmNewPass) {
+                    alert("Vui lòng nhập đầy đủ mật khẩu cũ, mới và xác nhận!");
+                    return;
+                }
+
+                if (newPass !== confirmNewPass) {
+                    alert("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+                    return;
+                }
+
+                btnChangePass.disabled = true;
+                btnChangePass.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+                try {
+                    const snapshot = await get(ref(db, 'accounts'));
+                    const accounts = snapshot.val();
+                    let accountKey = null;
+                    let foundCorrectPass = false;
+
+                    if (accounts) {
+                        for (let id in accounts) {
+                            try {
+                                const acc = accounts[id];
+                                if (atob(acc.user).toLowerCase() === user.toLowerCase()) {
+                                    accountKey = id;
+                                    if (atob(acc.pass) === oldPass) {
+                                        foundCorrectPass = true;
+                                    }
+                                    break;
+                                }
+                            } catch (e) { }
+                        }
+                    }
+
+                    if (!foundCorrectPass) {
+                        alert("Mật khẩu cũ không chính xác!");
+                    } else {
+                        await update(ref(db, `accounts/${accountKey}`), {
+                            pass: btoa(newPass)
+                        });
+                        alert("Đã đổi mật khẩu thành công!");
+                        document.getElementById('oldPass').value = "";
+                        document.getElementById('newPass').value = "";
+                        settingsModal.style.display = "none";
+                    }
+                } catch (err) {
+                    alert("Lỗi đổi mật khẩu: " + err.message);
+                } finally {
+                    btnChangePass.disabled = false;
+                    btnChangePass.innerHTML = 'ĐỔI MK';
+                }
+            };
+
+            // --- LOGIC NHẬP JSON TỪ AI ---
+            const btnOpenImportJson = document.getElementById('btnOpenImportJson');
+            const importJsonModal = document.getElementById('importJsonModal');
+            const btnConfirmImportJson = document.getElementById('btnConfirmImportJson');
+            const jsonInputArea = document.getElementById('jsonInputArea');
+            const closeImportJson = document.querySelector('.close-import-json');
+            const btnCopyPrompt = document.getElementById('btnCopyPrompt');
+            const promptCode = document.getElementById('promptCode');
+
+            btnOpenImportJson.onclick = () => importJsonModal.style.display = "flex";
+            closeImportJson.onclick = () => importJsonModal.style.display = "none";
+            // Click bên ngoài modal để đóng
+            window.addEventListener('click', (e) => {
+                if (e.target == importJsonModal) importJsonModal.style.display = "none";
+                if (e.target == settingsModal) settingsModal.style.display = "none"; // Fix luôn legacy code
+            });
+
+            btnCopyPrompt.onclick = () => {
+                navigator.clipboard.writeText(promptCode.innerText);
+                const originalText = btnCopyPrompt.innerText;
+                btnCopyPrompt.innerText = "Đã copy!";
+                setTimeout(() => btnCopyPrompt.innerText = originalText, 2000);
+            };
+
+            btnConfirmImportJson.onclick = async () => {
+                const jsonText = jsonInputArea.value.trim();
+                if (!jsonText) {
+                    alert("Vui lòng dán nội dung JSON!");
+                    return;
+                }
+
+                btnConfirmImportJson.disabled = true;
+                btnConfirmImportJson.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
+
+                try {
+                    // Loại bỏ markdown nếu có (```json ... ```)
+                    let cleanJson = jsonText;
+                    if (cleanJson.startsWith("```")) {
+                        cleanJson = cleanJson.replace(/```json/gi, "").replace(/```/g, "").trim();
+                    }
+
+                    const data = JSON.parse(cleanJson);
+                    if (!data.thông_tin_chung || !data.danh_sách_vé) {
+                        throw new Error("Định dạng JSON không đúng yêu cầu (thiếu thông_tin_chung hoặc danh_sách_vé)");
+                    }
+
+                    const info = data.thông_tin_chung;
+                    const tickets = data.danh_sách_vé;
+
+                    // 1. Phân tách Ngày (DD-MM-YYYY -> YYYY-MM-DD)
+                    let formattedDate = info.ngày_mở_thưởng;
+                    if (formattedDate.includes('-')) {
+                        const parts = formattedDate.split('-');
+                        if (parts[0].length !== 4) { // Nếu không phải YYYY-MM-DD thì đổi
+                            formattedDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                        }
+                    } else if (formattedDate.includes('/')) {
+                        formattedDate = formattedDate.replace(/\//g, '-');
+                    }
+
+                    // 2. Tìm Tỉnh
+                    let provinceId = null;
+                    let provinceName = "Không rõ";
+                    const provinceNameRaw = info.đài_phát_hành.toLowerCase();
+                    for (let key in provinces) {
+                        if (provinceNameRaw.includes(key)) {
+                            provinceId = provinces[key];
+                            provinceName = stations[provinceId];
+                            break;
+                        }
+                    }
+
+                    if (!provinceId) {
+                        alert("Không tìm thấy đài/tỉnh tương ứng trong hệ thống: " + info.đài_phát_hành);
+                        btnConfirmImportJson.disabled = false;
+                        btnConfirmImportJson.innerHTML = 'XÁC NHẬN NHẬP DỮ LIỆU';
+                        return;
+                    }
+
+                    // 3. Chuẩn bị dữ liệu hiển thị và TỰ ĐỘNG GỘP VÉ TRÙNG
+                    const tempResults = [];
+                    tickets.forEach(t => {
+                        const so = t.số_dự_thưởng.toString().padStart(6, '0');
+                        
+                        // Kiểm tra xem đã có số này trong danh sách tạm chưa
+                        const existIdx = tempResults.findIndex(r => r.number === so);
+                        
+                        if (existIdx > -1) {
+                            // Nếu trùng, tăng số lượng
+                            tempResults[existIdx].so_luong += 1;
+                        } else {
+                            // Nếu mới, thêm vào danh sách
+                            tempResults.push({
+                                number: so,
+                                date: formattedDate,
+                                foundProvinceId: provinceId,
+                                foundProvinceName: provinceName,
+                                so_luong: 1,
+                                isConfidenceHigh: true
+                            });
+                        }
+                    });
+
+                    displayAiResults(tempResults, 'json');
+
+                    alert(`Kiểm tra lại số trước khi nhập nha`);
+                    importJsonModal.style.display = "none";
+                    jsonInputArea.value = "";
+
+                    // Cuộn xuống khu vực kết quả
+                    document.getElementById('scanResultBox').scrollIntoView({ behavior: 'smooth' });
+
+                } catch (err) {
+
+                    alert("Lỗi khi xử lý JSON: " + err.message);
+                } finally {
+                    btnConfirmImportJson.disabled = false;
+                    btnConfirmImportJson.innerHTML = 'XÁC NHẬN NHẬP DỮ LIỆU';
+                }
+            };
+
+
+            // --- LOGIC ĐĂNG XUẤT ---
+            document.getElementById('btnLogoutMain').onclick = () => {
+                if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                    localStorage.removeItem('lottery_user');
+                    location.reload();
+                }
+            };
+
+            const messaging = getMessaging(app);
+            const VAPID_KEY = "BDQ1MvxXzvYD5T250dJO_F1jXr2S2aEuh8GSI-B-hbSZg-GM1D1p0VQl1Aa-UKKVkEwlvbTB0n1S2jVJ0Ib4MGc";
+
+            let geminiApiKey = "";
+
+            // Hàm lấy API Key từ Database
+            async function fetchGeminiKey() {
+                try {
+                    const snapshot = await get(child(ref(db), 'secrets/gemini_key'));
+                    if (snapshot.exists()) {
+                        // Giải mã Base64
+                        geminiApiKey = atob(snapshot.val());
+                        console.log("Đã tải cấu hình AI thành công.");
+                    } else {
+                        console.error("Không tìm thấy Gemini Key trong Database.");
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi tải Gemini Key:", error);
+                }
+            }
+
+            fetchGeminiKey();
+
+            const stations = {
+                1: "TP.HCM", 2: "Đồng Tháp", 3: "Cà Mau",
+                7: "Bến Tre", 8: "Vũng Tàu", 9: "Bạc Liêu",
+                10: "Đồng Nai", 11: "Cần Thơ", 12: "Sóc Trăng",
+                13: "Tây Ninh", 14: "An Giang", 15: "Bình Thuận",
+                16: "Vĩnh Long", 17: "Bình Dương", 18: "Trà Vinh",
+                19: "Long An", 21: "Bình Phước", 20: "Hậu Giang",
+                22: "Tiền Giang", 23: "Kiên Giang", 24: "Đà Lạt"
+            };
+
+            const schedule = {
+                1: [1, 2, 3],      // Thứ 2
+                2: [7, 8, 9],      // Thứ 3
+                3: [10, 11, 12],   // Thứ 4
+                4: [13, 14, 15],   // Thứ 5
+                5: [16, 17, 18],   // Thứ 6
+                6: [1, 19, 21, 20], // Thứ 7
+                0: [22, 23, 24]    // Chủ Nhật
+            };
+
+            const dayNames = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+
+            function updateProvinceList() {
+                const dateVal = document.getElementById('ngay').value; // YYYY-MM-DD
+                const select = document.getElementById('tinh');
+                const dayLabel = document.getElementById('dayLabel');
+
+                if (!dateVal) return;
+
+                const dateObj = new Date(dateVal);
+                const dayOfWeek = dateObj.getDay();
+
+                // Cập nhật nhãn thứ
+                dayLabel.textContent = `(${dayNames[dayOfWeek]})`;
+
+                const available = schedule[dayOfWeek] || [];
+
+                select.innerHTML = "";
+                available.forEach(id => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = stations[id];
+                    select.appendChild(opt);
+                });
+            }
+
+            document.getElementById('ngay').addEventListener('change', () => {
+                updateProvinceList();
+                updateActiveShortcut();
+            });
+
+            // Tính toán ngày và gán cho nút
+            // Tính toán ngày theo chu kỳ tuần hiện tại (Thứ 2 - Chủ Nhật)
+            function getWeekDate(targetDay) {
+                const now = new Date();
+                const todayIndex = now.getDay(); // 0 (CN) -> 6 (T7)
+
+                // Chuyển đổi sang hệ Monday-start (1=T2, ..., 7=CN)
+                const currentPos = todayIndex === 0 ? 7 : todayIndex;
+                const targetPos = targetDay === 0 ? 7 : targetDay;
+
+                const diff = targetPos - currentPos;
+                const targetDate = new Date();
+                targetDate.setDate(now.getDate() + diff);
+                return targetDate;
+            }
+
+            function setDateByDayIndex(targetDay) {
+                const targetDate = getWeekDate(targetDay);
+
+                const y = targetDate.getFullYear();
+                const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+                const d = String(targetDate.getDate()).padStart(2, '0');
+
+                document.getElementById('ngay').value = `${y}-${m}-${d}`;
+                updateProvinceList();
+                updateActiveShortcut();
+            }
+
+            // Hiển thị ngày tháng thực tế lên các nút Shortcut
+            function updateShortcutDates() {
+                const now = new Date();
+                const todayIndex = now.getDay();
+
+                document.querySelectorAll('.day-btn').forEach(btn => {
+                    const targetDay = parseInt(btn.dataset.day);
+                    const targetDate = getWeekDate(targetDay);
+
+                    const d = String(targetDate.getDate()).padStart(2, '0');
+                    const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+
+                    const baseText = targetDay === 0 ? "CN" : `T${targetDay + 1}`;
+                    btn.innerHTML = `${baseText}<br><span style="font-size: 0.65rem; opacity: 0.8;">${d}/${m}</span>`;
+
+                    // Đánh dấu ngày thực tế hôm nay
+                    if (targetDay === todayIndex) {
+                        btn.style.position = 'relative';
+                        // Xóa dot cũ nếu có
+                        const oldDot = btn.querySelector('.today-dot');
+                        if (oldDot) oldDot.remove();
+
+                        const dot = document.createElement('div');
+                        dot.className = 'today-dot';
+                        dot.style.cssText = "position:absolute; top:2px; right:2px; width:4px; height:4px; background:#ff4757; border-radius:50%;";
+                        btn.appendChild(dot);
+                    }
+                });
+            }
+
+            function updateActiveShortcut() {
+                const dateVal = document.getElementById('ngay').value;
+                if (!dateVal) return;
+                const dayOfWeek = new Date(dateVal).getDay();
+
+                document.querySelectorAll('.day-btn').forEach(btn => {
+                    if (parseInt(btn.dataset.day) === dayOfWeek) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    setDateByDayIndex(parseInt(btn.dataset.day));
+                });
+            });
+
+            // Khởi tạo "Ngày Thông Minh"
+            function initSmartDate() {
+                const now = new Date();
+
+                // Luôn mặc định là ngày Hôm nay (ngày mới nhất)
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+
+                document.getElementById('ngay').value = `${y}-${m}-${d}`;
+                updateShortcutDates(); // Cập nhật ngày trên nút
+                updateProvinceList();
+                updateActiveShortcut();
+            }
+
+            document.getElementById('so').addEventListener('blur', function () {
+                let val = this.value.trim();
+                if (val && val.length < 6) {
+                    this.value = val.padStart(6, '0');
+                }
+            });
+
+            initSmartDate();
+
+            // --- SCAN TICKET (TESSERACT.JS) ---
+            const imageInput = document.getElementById('imageInput');
+            const btnScanTrigger = document.getElementById('btnScanTrigger');
+            const scanLoading = document.getElementById('scanLoading');
+            const scanResultBox = document.getElementById('scanResultBox');
+            const scanPreview = document.getElementById('scanPreview');
+            const scanText = document.getElementById('scanText');
+
+            const btnRotateImage = document.getElementById('btnRotateImage');
+            let currentImageObj = new Image();
+            let currentRotation = 0;
+
+            btnScanTrigger.addEventListener('click', () => {
+                imageInput.click();
+            });
+
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files.length === 0) return;
+                const file = e.target.files[0];
+                currentImageObj.src = URL.createObjectURL(file);
+                currentImageObj.onload = () => {
+                    currentRotation = 0;
+                    processAndScanImage();
+                };
+            });
+
+            btnRotateImage.addEventListener('click', () => {
+                currentRotation = (currentRotation + 90) % 360;
+                processAndScanImage();
+            });
+
+            async function processAndScanImage() {
+                scanResultBox.style.display = "block";
+                scanText.innerHTML = "Khởi tạo công cụ đọc chữ...";
+                scanLoading.style.display = "block";
+
+                // Vẽ ảnh lên canvas với góc xoay
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                if (currentRotation === 90 || currentRotation === 270) {
+                    canvas.width = currentImageObj.height;
+                    canvas.height = currentImageObj.width;
+                } else {
+                    canvas.width = currentImageObj.width;
+                    canvas.height = currentImageObj.height;
+                }
+
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate(currentRotation * Math.PI / 180);
+                ctx.drawImage(currentImageObj, -currentImageObj.width / 2, -currentImageObj.height / 2);
+
+                const imageDataUrl = canvas.toDataURL('image/jpeg');
+                scanPreview.src = imageDataUrl;
+
+                try {
+                    scanText.innerHTML = "Đang gửi ảnh tới AI Gemini siêu cấp...";
+                    const base64Image = imageDataUrl.split(',')[1];
+
+                    if (!geminiApiKey) {
+                        await fetchGeminiKey();
+                    }
+
+                    const models = ["gemini-3-flash-preview", "gemini-2.0-flash", "gemini-flash-latest"];
+                    let response = null;
+                    const maxRetries = 3;
+
+                    outerLoop: for (const modelId of models) {
+                        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                            try {
+                                const retryText = attempt > 1 ? `<br><span style="color:var(--warning);font-size:11px;">(Thử lại lần ${attempt}/${maxRetries}...)</span>` : "";
+                                scanText.innerHTML = `<i class="fa-solid fa-microchip"></i> Đang gọi máy chủ: <span style="color:#a78bfa; font-weight:bold;">${modelId}</span>${retryText}`;
+
+                                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${geminiApiKey}`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        contents: [{
+                                            parts: [
+                                                { text: "Hãy tìm và trích xuất thông tin từ TẤT CẢ các vé số kiến thiết Việt Nam có trong ảnh này. Trích xuất thông tin chi tiết của từng vé." },
+                                                { inlineData: { mimeType: "image/jpeg", data: base64Image } }
+                                            ]
+                                        }],
+                                        generationConfig: {
+                                            temperature: 0.1,
+                                            responseMimeType: "application/json",
+                                            responseSchema: {
+                                                type: "ARRAY",
+                                                items: {
+                                                    type: "OBJECT",
+                                                    properties: {
+                                                        number: { type: "STRING", description: "Số vé số (6 chữ số)" },
+                                                        date: { type: "STRING", description: "Ngày mở thưởng (DD/MM/YYYY)" },
+                                                        province: { type: "STRING", description: "Tỉnh/Thành phố phát hành" },
+                                                        region: {
+                                                            type: "STRING",
+                                                            enum: ["Miền Nam", "Miền Trung", "Miền Bắc"],
+                                                            description: "Vùng miền của vé số"
+                                                        },
+                                                        isConfidenceHigh: { type: "BOOLEAN", description: "Độ tin cậy của kết quả" }
+                                                    },
+                                                    required: ["number", "date", "province", "region"]
+                                                }
+                                            }
+                                        }
+                                    })
+                                });
+
+                                response = res;
+
+                                if (res.ok) {
+                                    break outerLoop;
+                                }
+
+                                const status = res.status;
+                                const isRetryable = [429, 500, 502, 503, 504].includes(status);
+
+                                if (isRetryable && attempt < maxRetries) {
+                                    await new Promise(r => setTimeout(r, 1500));
+                                    continue;
+                                } else {
+                                    break;
+                                }
+                            } catch (e) {
+                                if (attempt < maxRetries) {
+                                    await new Promise(r => setTimeout(r, 1500));
+                                    continue;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!response || !response.ok) {
+                        let detail = "";
+                        if (response) {
+                            try {
+                                const errJson = await response.json();
+                                detail = ": " + (errJson.error?.message || response.statusText);
+                            } catch (e) { detail = " (Mã lỗi HTTP " + response.status + ")"; }
+                        }
+                        throw new Error("Không thể kết nối máy chủ AI" + detail + ".");
+                    }
+
+                    const result = await response.json();
+                    let aiText = result.candidates[0].content.parts[0].text.trim();
+
+                    if (aiText.startsWith("```")) {
+                        aiText = aiText.replace(/```json/gi, "").replace(/```/g, "").trim();
+                    }
+
+                    let aiDataList = [];
+                    try {
+                        const parsed = JSON.parse(aiText);
+                        aiDataList = Array.isArray(parsed) ? parsed : [parsed];
+                    } catch (err) {
+                        throw new Error("AI trả về định dạng sai: " + aiText);
+                    }
+
+                    // const provinces mapping đã được chuyển ra ngoài scope để dùng chung
+
+
+                    let tempResults = [];
+                    aiDataList.forEach(item => {
+                        let foundId = null;
+                        let foundName = item.province || "Không rõ";
+
+                        if (item.province) {
+                            const low = item.province.toLowerCase().trim();
+                            for (const [name, id] of Object.entries(provinces)) {
+                                if (low.includes(name) || name === low) {
+                                    foundId = id;
+                                    foundName = stations[id];
+                                    break;
+                                }
+                            }
+                        }
+
+                        let finalSo = String(item.number || '').trim();
+                        if (finalSo.length > 0 && finalSo.length < 6) finalSo = finalSo.padStart(6, '0');
+
+                        // Tự động gộp thẻ bị trùng từ AI
+                        const existIdx = tempResults.findIndex(r => r.number === finalSo && r.date === item.date && r.foundProvinceId === foundId);
+                        if (existIdx > -1) {
+                            tempResults[existIdx].so_luong = (tempResults[existIdx].so_luong || 1) + 1;
+                        } else {
+                            tempResults.push({ ...item, number: finalSo, foundProvinceId: foundId, foundProvinceName: foundName, so_luong: 1 });
+                        }
+                    });
+
+                    displayAiResults(tempResults, 'json');
+                } catch (error) {
+                    scanText.innerHTML = `<b style="color: var(--danger);">Lỗi AI:</b> ` + error.message;
+                } finally {
+                    scanLoading.style.display = "none";
+                    imageInput.value = ""; // Reset input
+                }
+            }
+
+
+            // --- HÀM GỘP VÉ TRÙNG LẶP ---
+            // --- HÀM GỘP VÉ TRÙNG LẶP ---
+            async function checkAndAddTicket(number, date, tinhId, tinhName, sl) {
+                try {
+                    const snapshot = await get(ticketsRef);
+                    const data = snapshot.val();
+                    let foundId = null;
+                    let existingSl = 0;
+
+                    if (data) {
+                        for (const [key, t] of Object.entries(data)) {
+                            if (t.number === number && t.date === date && String(t.tinh) === String(tinhId) && t.status === 'pending') {
+                                foundId = key;
+                                existingSl = parseInt(t.sl) || 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (foundId) {
+                        // Update số lượng thay vì tạo mới
+                        await update(ref(db, `users/${currentUser}/tickets/${foundId}`), {
+                            sl: existingSl + sl
+                        });
+                    } else {
+                        // Tạo mới nếu không trùng
+                        await push(ticketsRef, {
+                            number: number,
+                            sl: sl,
+                            date: date,
+                            tinh: tinhId,
+                            tinhName: tinhName,
+                            status: 'pending',
+                            createdAt: Date.now()
+                        });
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi thêm vé:", e);
+                    throw e;
+                }
+            }
+
+            // 1. Thêm vé mới (Thủ công)
+            document.getElementById('lotteryForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btnSave = document.getElementById('lotteryForm').querySelector('.btn-submit');
+
+                let number = document.getElementById('so').value.trim();
+                if (number.length < 6) number = number.padStart(6, '0');
+
+                const sl = parseInt(document.getElementById('sl').value) || 1;
+                const rawDate = document.getElementById('ngay').value; // YYYY-MM-DD
+                const [y, m, d] = rawDate.split('-');
+                const formattedDate = `${d}-${m}-${y}`; // Chuyển về DD-MM-YYYY
+
+                const tinh = document.getElementById('tinh').value;
+                const tinhName = document.getElementById('tinh').options[document.getElementById('tinh').selectedIndex].text;
+
+                btnSave.disabled = true;
+                btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG LƯU...';
+
+                try {
+                    await checkAndAddTicket(number, formattedDate, tinh, tinhName, sl);
+                    document.getElementById('so').value = '';
+                    document.getElementById('sl').value = '1';
+                    document.getElementById('so').focus();
+                } catch (err) {
+                    alert("Lỗi khi thêm: " + err.message);
+                } finally {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> LƯU VÉ';
+                }
+            });
+
+            // 2. Lắng nghe dữ liệu
+            onValue(ticketsRef, (snapshot) => {
+                const data = snapshot.val();
+                const listContainer = document.getElementById('ticketList');
+                listContainer.innerHTML = '';
+
+                if (!data) {
+                    listContainer.innerHTML = '<div class="empty-state">Chưa có vé nào. Hãy thêm vé đầu tiên của bạn!</div>';
+                    document.getElementById('ticketCount').innerText = '0 vé';
+                    return;
+                }
+
+                const entries = Object.entries(data).reverse();
+
+                // Tính tổng số lượng vé (cộng dồn sl)
+                let totalQty = 0;
+                entries.forEach(([id, t]) => {
+                    totalQty += (parseInt(t.sl) || 1);
+                });
+                document.getElementById('ticketCount').innerText = `${totalQty} vé`;
+
+                entries.forEach(([id, ticket]) => {
+                    const div = document.createElement('div');
+                    div.className = 'ticket-item';
+
+                    let statusBadge = '';
+                    if (ticket.status === 'WIN') {
+                        statusBadge = `<span class="badge badge-win">TRÚNG GIẢI</span>`;
+                        div.style.borderColor = 'var(--success)';
+                    } else if (ticket.status === 'LOST') {
+                        statusBadge = `<span class="badge badge-lost">RẤT TIẾC</span>`;
+                    } else {
+                        statusBadge = `<span class="badge badge-pending">ĐANG ĐỢI...</span>`;
+                    }
+
+                    div.innerHTML = `
+                <div class="ticket-info">
+                    <h3>${ticket.number} ${ticket.sl > 1 ? `<span style="font-size: 14px; opacity: 0.7; font-weight: 400;">x${ticket.sl}</span>` : ''}</h3>
+                    <p>${ticket.tinhName} | ${ticket.date}</p>
+                    ${ticket.result_detail ? `<p style="color:var(--success); font-weight:600; font-size:12px; margin-top:8px; line-height:1.5; white-space:pre-wrap; background:rgba(16, 185, 129, 0.05); padding:8px; border-radius:8px; border-left:3px solid var(--success);">${ticket.result_detail}</p>` : ''}
+                </div>
+                <div class="ticket-status">
+                    ${statusBadge}
+                    <button class="btn-delete" data-id="${id}">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+                    listContainer.appendChild(div);
+                });
+
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        if (confirm("Bạn có chắc muốn xóa vé này?")) {
+                            remove(ref(db, `users/${currentUser}/tickets/${id}`));
+                        }
+                    });
+                });
+            });
+            // --- TERMINAL SYNC LOGIC (PRIVACY-AWARE) ---
+            const logPath = (currentUser === 'admin')
+                ? 'users/admin/vps_logs'
+                : `users/admin/vps_logs_user/${currentUser}`;
+
+            const vpsLogsRef = ref(db, logPath);
+            onValue(vpsLogsRef, (snapshot) => {
+                const logs = snapshot.val();
+                if (!logs || !Array.isArray(logs)) return;
+
+                const terminalBody = document.getElementById('terminalBody');
+                const vpsTerminal = document.getElementById('vpsTerminal');
+
+                terminalBody.innerHTML = logs.map(l => `<div><span style="color: #10b981;">></span> ${l}</div>`).join('');
+
+                // Auto-scroll to bottom
+                vpsTerminal.scrollTop = vpsTerminal.scrollHeight;
+            });
+
+            // --- ADMIN & USER TRIGGER LOGIC ---
+            if (currentUser === 'admin') {
+                document.getElementById('adminActions').style.display = 'block';
+
+                // System-wide Trigger (Admin Only)
+                document.getElementById('btnRemoteScan').addEventListener('click', async () => {
+                    if (!confirm("Bạn muốn kích hoạt quét toàn hệ thống trên VPS ngay bây giờ?")) return;
+
+                    const triggerRef = ref(db, 'users/admin/vps_config/remote_trigger');
+                    const btn = document.getElementById('btnRemoteScan');
+
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG GỬI LỆNH...';
+
+                    try {
+                        await set(triggerRef, {
+                            type: 'system',
+                            timestamp: Date.now()
+                        });
+                        const terminalBody = document.getElementById('terminalBody');
+                        terminalBody.innerHTML += `<div style="color: #fbbf24;">[REMOTE] Đã gửi yêu cầu quét HỆ THỐNG tới VPS...</div>`;
+                        vpsTerminal.scrollTop = vpsTerminal.scrollHeight;
+                    } catch (e) {
+                        alert("Lỗi kích hoạt VPS: " + e.message);
+                    } finally {
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fa-solid fa-microchip"></i> QUÉT TẤT CẢ TÀI KHOẢN (ADMIN)';
+                        }, 5000);
+                    }
+                });
+            }
+
+            // Individual User Trigger (All Users)
+            document.getElementById('btnUserScan').addEventListener('click', async () => {
+                const triggerRef = ref(db, 'users/admin/vps_config/remote_trigger');
+                const btn = document.getElementById('btnUserScan');
+
+                btn.disabled = true;
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>...';
+
+                try {
+                    await set(triggerRef, {
+                        type: 'user',
+                        username: currentUser,
+                        timestamp: Date.now()
+                    });
+
+                    if (currentUser === 'admin') {
+                        const terminalBody = document.getElementById('terminalBody');
+                        terminalBody.innerHTML += `<div style="color: #38bdf8;">[REMOTE] Đang yêu cầu dò vé cá nhân của Admin...</div>`;
+                        document.getElementById('vpsTerminal').scrollTop = document.getElementById('vpsTerminal').scrollHeight;
+                    }
+                    alert("Đã gửi yêu cầu dò vé của bạn tới máy chủ!");
+                } catch (e) {
+                    alert("Lỗi kết nối máy chủ: " + e.message);
+                } finally {
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = oldText;
+                    }, 5000);
+                }
+            });
+
+
+        } // Đóng ngoặc hàm initApp(user)
+
+        // --- CLEAR ALL WITH PASSWORD ---
+        document.getElementById('btnClearAll').addEventListener('click', () => {
+            const pwd = prompt("Nhập mật khẩu để xóa toàn bộ danh sách:");
+            if (pwd === "Abc@123@") {
+                if (confirm("⚠️ CẢNH BÁO: Hành động này sẽ xóa SẠCH TOÀN BỘ danh sách vé của bạn. Bạn có chắc chắn muốn tiếp tục?")) {
+                    set(ref(db, `users/${currentUser}/tickets`), null).then(() => {
+                        alert("Đã xóa sạch danh sách vé thành công!");
+                    }).catch(error => {
+                        alert("Lỗi khi xóa: " + error.message);
+                    });
+                }
+            } else if (pwd !== null) {
+                alert("❌ Mật khẩu không chính xác!");
+            }
+        });
+    </script>
+
+</body>
+
+</html>
