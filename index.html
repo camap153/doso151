@@ -1554,7 +1554,7 @@ Trả về định dạng JSON chính xác như sau:
             const jsonInputArea = document.getElementById('jsonInputArea');
             const closeImportJson = document.querySelector('.close-import-json');
             const btnCopyPrompt = document.getElementById('btnCopyPrompt');
-            const promptCode = document.getElementById('promptCode');
+                            const promptCode = document.getElementById('promptCode');
 
             btnOpenImportJson.onclick = () => importJsonModal.style.display = "flex";
             closeImportJson.onclick = () => importJsonModal.style.display = "none";
@@ -1589,66 +1589,76 @@ Trả về định dạng JSON chính xác như sau:
                     }
 
                     const data = JSON.parse(cleanJson);
-                    if (!data.thông_tin_chung || !data.danh_sách_vé) {
+                    
+                    let dataBlocks = [];
+                    if (Array.isArray(data)) {
+                        dataBlocks = data;
+                    } else if (data.thông_tin_chung && data.danh_sách_vé) {
+                        dataBlocks = [data];
+                    } else {
                         throw new Error("Định dạng JSON không đúng yêu cầu (thiếu thông_tin_chung hoặc danh_sách_vé)");
                     }
 
-                    const info = data.thông_tin_chung;
-                    const tickets = data.danh_sách_vé;
-
-                    // 1. Phân tách Ngày (DD-MM-YYYY -> YYYY-MM-DD)
-                    let formattedDate = info.ngày_mở_thưởng;
-                    if (formattedDate.includes('-')) {
-                        const parts = formattedDate.split('-');
-                        if (parts[0].length !== 4) { // Nếu không phải YYYY-MM-DD thì đổi
-                            formattedDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
-                        }
-                    } else if (formattedDate.includes('/')) {
-                        formattedDate = formattedDate.replace(/\//g, '-');
-                    }
-
-                    // 2. Tìm Tỉnh
-                    let provinceId = null;
-                    let provinceName = "Không rõ";
-                    const provinceNameRaw = info.đài_phát_hành.toLowerCase();
-                    for (let key in provinces) {
-                        if (provinceNameRaw.includes(key)) {
-                            provinceId = provinces[key];
-                            provinceName = stations[provinceId];
-                            break;
-                        }
-                    }
-
-                    if (!provinceId) {
-                        alert("Không tìm thấy đài/tỉnh tương ứng trong hệ thống: " + info.đài_phát_hành);
-                        btnConfirmImportJson.disabled = false;
-                        btnConfirmImportJson.innerHTML = 'XÁC NHẬN NHẬP DỮ LIỆU';
-                        return;
-                    }
-
-                    // 3. Chuẩn bị dữ liệu hiển thị và TỰ ĐỘNG GỘP VÉ TRÙNG
                     const tempResults = [];
-                    tickets.forEach(t => {
-                        const so = t.số_dự_thưởng.toString().padStart(6, '0');
-                        
-                        // Kiểm tra xem đã có số này trong danh sách tạm chưa
-                        const existIdx = tempResults.findIndex(r => r.number === so);
-                        
-                        if (existIdx > -1) {
-                            // Nếu trùng, tăng số lượng
-                            tempResults[existIdx].so_luong += 1;
-                        } else {
-                            // Nếu mới, thêm vào danh sách
-                            tempResults.push({
-                                number: so,
-                                date: formattedDate,
-                                foundProvinceId: provinceId,
-                                foundProvinceName: provinceName,
-                                so_luong: 1,
-                                isConfidenceHigh: true
-                            });
+                    dataBlocks.forEach(block => {
+                        const info = block.thông_tin_chung;
+                        const blockTickets = block.danh_sách_vé;
+                        if (!info || !blockTickets) return;
+
+                        // 1. Phân tách Ngày (DD-MM-YYYY -> YYYY-MM-DD)
+                        let formattedDate = info.ngày_mở_thưởng;
+                        if (formattedDate.includes('-')) {
+                            const parts = formattedDate.split('-');
+                            if (parts[0].length !== 4) { // Nếu không phải YYYY-MM-DD (ví dụ DD-MM-YYYY)
+                                formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                        } else if (formattedDate.includes('/')) {
+                            const parts = formattedDate.split('/');
+                            if (parts[0].length !== 4) {
+                                formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
                         }
+
+                        // 2. Tìm Tỉnh cho khối này
+                        let provinceId = null;
+                        let provinceName = "Không rõ";
+                        const provinceNameRaw = (info.đài_phát_hành || "").toLowerCase();
+                        for (let key in provinces) {
+                            if (provinceNameRaw.includes(key)) {
+                                provinceId = provinces[key];
+                                provinceName = stations[provinceId];
+                                break;
+                            }
+                        }
+
+                        if (!provinceId) {
+                            console.warn("Không tìm thấy đài/tỉnh tương ứng cho: " + info.đài_phát_hành);
+                            return; 
+                        }
+
+                        // 3. Gom vé và TỰ ĐỘNG GỘP VÉ TRÙNG trong cùng đài/ngày
+                        blockTickets.forEach(t => {
+                            const so = t.số_dự_thưởng.toString().padStart(6, '0');
+                            const existIdx = tempResults.findIndex(r => r.number === so && r.foundProvinceId === provinceId && r.date === formattedDate);
+                            
+                            if (existIdx > -1) {
+                                tempResults[existIdx].so_luong += 1;
+                            } else {
+                                tempResults.push({
+                                    number: so,
+                                    date: formattedDate,
+                                    foundProvinceId: provinceId,
+                                    foundProvinceName: provinceName,
+                                    so_luong: 1,
+                                    isConfidenceHigh: true
+                                });
+                            }
+                        });
                     });
+
+                    if (tempResults.length === 0) {
+                        throw new Error("Không trích xuất được dữ liệu vé hợp lệ từ JSON.");
+                    }
 
                     displayAiResults(tempResults, 'json');
 
