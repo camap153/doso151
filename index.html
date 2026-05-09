@@ -618,6 +618,68 @@
             margin-right: 5px;
             box-shadow: 0 0 8px #10b981;
         }
+
+        /* Date Grouping Styles */
+        .date-group {
+            margin-bottom: 15px;
+        }
+
+        .date-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(167, 139, 250, 0.05);
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(167, 139, 250, 0.15);
+            margin-bottom: 8px;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        .date-header:hover {
+            background: rgba(167, 139, 250, 0.1);
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+
+        .date-header h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #a78bfa;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .date-header .date-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .date-header .toggle-icon {
+            font-size: 12px;
+            color: #a78bfa;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .date-group.collapsed .date-content {
+            display: none;
+        }
+
+        .date-group.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .date-group.collapsed .date-header {
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 
@@ -1000,6 +1062,7 @@ Trả về định dạng JSON chính xác như sau:
                     <button id="btnClearAll" class="btn-clear"><i class="fa-solid fa-trash-sweep"></i> XÓA HẾT</button>
                 </div>
             </div>
+
             <div id="ticketList">
                 <!-- Tickets will appear here -->
                 <div class="empty-state">Đang tải dữ liệu từ Firebase...</div>
@@ -2106,6 +2169,132 @@ Trả về định dạng JSON chính xác như sau:
                 }
             }
 
+            // --- HÀM GỘP VÉ TOÀN BỘ (ĐÃ BỎ NÚT, GIỮ LẠI LOGIC NẾU CẦN) ---
+            async function mergeAllTickets() {
+                // Logic gộp vé giữ lại để checkAndAddTicket dùng, nhưng nút giao diện đã bỏ
+            }
+
+            // document.getElementById('btnMergeTickets').addEventListener('click', mergeAllTickets); // Bỏ listener
+
+            // --- LOGIC LỌC VÉ THEO NGÀY (ĐÃ BỎ) ---
+
+            let currentTicketsData = null;
+
+            function renderTickets() {
+                const data = currentTicketsData;
+                const listContainer = document.getElementById('ticketList');
+                listContainer.innerHTML = '';
+
+                if (!data) {
+                    listContainer.innerHTML = '<div class="empty-state">Chưa có vé nào. Hãy thêm vé đầu tiên của bạn!</div>';
+                    document.getElementById('ticketCount').innerText = '0 vé';
+                    return;
+                }
+
+                let entries = Object.entries(data).reverse();
+                
+                if (entries.length === 0) {
+                    listContainer.innerHTML = `<div class="empty-state">Chưa có vé nào.</div>`;
+                    document.getElementById('ticketCount').innerText = '0 vé';
+                    return;
+                }
+
+                // Tính tổng số lượng vé (cộng dồn sl)
+                let totalQty = 0;
+                entries.forEach(([id, t]) => {
+                    totalQty += (parseInt(t.sl) || 1);
+                });
+                document.getElementById('ticketCount').innerText = `${totalQty} vé`;
+
+                // --- GỘP VÉ THEO NGÀY ĐỂ HIỂN THỊ (COLLAPSIBLE) ---
+                const grouped = {};
+                entries.forEach(([id, t]) => {
+                    if (!grouped[t.date]) grouped[t.date] = [];
+                    grouped[t.date].push({ id, ...t });
+                });
+
+                // Lấy danh sách trạng thái thu gọn từ localStorage
+                const collapsedState = JSON.parse(localStorage.getItem('collapsed_dates') || "{}");
+
+                Object.keys(grouped).forEach(date => {
+                    const tickets = grouped[date];
+                    // Mặc định là Collapsed (true) nếu chưa có trạng thái lưu
+                    const isCollapsed = collapsedState[date] !== false; 
+
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = `date-group ${isCollapsed ? 'collapsed' : ''}`;
+                    groupDiv.dataset.date = date;
+
+                    const totalSlInDate = tickets.reduce((sum, t) => sum + (parseInt(t.sl) || 1), 0);
+
+                    groupDiv.innerHTML = `
+                        <div class="date-header">
+                            <h3><i class="fa-solid fa-calendar-day"></i> NGÀY ${date}</h3>
+                            <div class="date-info">
+                                <span>${tickets.length} dòng / ${totalSlInDate} vé</span>
+                                <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                            </div>
+                        </div>
+                        <div class="date-content"></div>
+                    `;
+
+                    const contentDiv = groupDiv.querySelector('.date-content');
+                    tickets.forEach(ticket => {
+                        const div = document.createElement('div');
+                        div.className = 'ticket-item';
+
+                        let statusBadge = '';
+                        if (ticket.status === 'WIN') {
+                            statusBadge = `<span class="badge badge-win">TRÚNG GIẢI</span>`;
+                            div.style.borderColor = 'var(--success)';
+                        } else if (ticket.status === 'LOST') {
+                            statusBadge = `<span class="badge badge-lost">RẤT TIẾC</span>`;
+                        } else {
+                            statusBadge = `<span class="badge badge-pending">ĐANG ĐỢI...</span>`;
+                        }
+
+                        div.innerHTML = `
+                            <div class="ticket-info">
+                                <h3>${ticket.number} ${ticket.sl > 1 ? `<span style="font-size: 14px; opacity: 0.7; font-weight: 400;">x${ticket.sl}</span>` : ''}</h3>
+                                <p>${ticket.tinhName} | ${ticket.date}</p>
+                                ${ticket.result_detail ? `<p style="color:var(--success); font-weight:600; font-size:12px; margin-top:8px; line-height:1.5; white-space:pre-wrap; background:rgba(16, 185, 129, 0.05); padding:8px; border-radius:8px; border-left:3px solid var(--success);">${ticket.result_detail}</p>` : ''}
+                            </div>
+                            <div class="ticket-status">
+                                ${statusBadge}
+                                <button class="btn-delete" data-id="${ticket.id}">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        `;
+                        contentDiv.appendChild(div);
+                    });
+
+                    // Sự kiện toggle thu gọn
+                    groupDiv.querySelector('.date-header').onclick = () => {
+                        const currentlyCollapsed = groupDiv.classList.contains('collapsed');
+                        groupDiv.classList.toggle('collapsed');
+                        
+                        // Lưu trạng thái vào localStorage (ngược lại với class sau toggle)
+                        const newState = currentlyCollapsed ? false : true; 
+                        const currentStates = JSON.parse(localStorage.getItem('collapsed_dates') || "{}");
+                        currentStates[date] = newState;
+                        localStorage.setItem('collapsed_dates', JSON.stringify(currentStates));
+                    };
+
+                    listContainer.appendChild(groupDiv);
+                });
+
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Ngăn sự kiện click của header (nếu lồng nhau)
+                        const id = btn.getAttribute('data-id');
+                        if (confirm("Bạn có chắc muốn xóa vé này?")) {
+                            remove(ref(db, `users/${currentUser}/tickets/${id}`));
+                        }
+                    });
+                });
+            }
+
             // 1. Thêm vé mới (Thủ công)
             document.getElementById('lotteryForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -2140,63 +2329,8 @@ Trả về định dạng JSON chính xác như sau:
 
             // 2. Lắng nghe dữ liệu
             onValue(ticketsRef, (snapshot) => {
-                const data = snapshot.val();
-                const listContainer = document.getElementById('ticketList');
-                listContainer.innerHTML = '';
-
-                if (!data) {
-                    listContainer.innerHTML = '<div class="empty-state">Chưa có vé nào. Hãy thêm vé đầu tiên của bạn!</div>';
-                    document.getElementById('ticketCount').innerText = '0 vé';
-                    return;
-                }
-
-                const entries = Object.entries(data).reverse();
-
-                // Tính tổng số lượng vé (cộng dồn sl)
-                let totalQty = 0;
-                entries.forEach(([id, t]) => {
-                    totalQty += (parseInt(t.sl) || 1);
-                });
-                document.getElementById('ticketCount').innerText = `${totalQty} vé`;
-
-                entries.forEach(([id, ticket]) => {
-                    const div = document.createElement('div');
-                    div.className = 'ticket-item';
-
-                    let statusBadge = '';
-                    if (ticket.status === 'WIN') {
-                        statusBadge = `<span class="badge badge-win">TRÚNG GIẢI</span>`;
-                        div.style.borderColor = 'var(--success)';
-                    } else if (ticket.status === 'LOST') {
-                        statusBadge = `<span class="badge badge-lost">RẤT TIẾC</span>`;
-                    } else {
-                        statusBadge = `<span class="badge badge-pending">ĐANG ĐỢI...</span>`;
-                    }
-
-                    div.innerHTML = `
-                <div class="ticket-info">
-                    <h3>${ticket.number} ${ticket.sl > 1 ? `<span style="font-size: 14px; opacity: 0.7; font-weight: 400;">x${ticket.sl}</span>` : ''}</h3>
-                    <p>${ticket.tinhName} | ${ticket.date}</p>
-                    ${ticket.result_detail ? `<p style="color:var(--success); font-weight:600; font-size:12px; margin-top:8px; line-height:1.5; white-space:pre-wrap; background:rgba(16, 185, 129, 0.05); padding:8px; border-radius:8px; border-left:3px solid var(--success);">${ticket.result_detail}</p>` : ''}
-                </div>
-                <div class="ticket-status">
-                    ${statusBadge}
-                    <button class="btn-delete" data-id="${id}">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            `;
-                    listContainer.appendChild(div);
-                });
-
-                document.querySelectorAll('.btn-delete').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute('data-id');
-                        if (confirm("Bạn có chắc muốn xóa vé này?")) {
-                            remove(ref(db, `users/${currentUser}/tickets/${id}`));
-                        }
-                    });
-                });
+                currentTicketsData = snapshot.val();
+                renderTickets();
             });
             // --- TERMINAL SYNC LOGIC (PRIVACY-AWARE) ---
             const logPath = (currentUser === 'admin')
