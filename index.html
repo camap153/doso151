@@ -1122,6 +1122,31 @@ Trả về định dạng JSON chính xác như sau:
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- UTILITY: CHUẨN HÓA NGÀY VỀ DD-MM-YYYY ---
+        function normalizeDateToDDMMYYYY(dateStr) {
+            if (!dateStr) return "";
+            dateStr = dateStr.trim();
+            // Case 1: YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                const [y, m, d] = dateStr.split('-');
+                return `${d}-${m}-${y}`;
+            }
+            // Case 2: YYYY/MM/DD
+            if (/^\d{4}\/\d{2}\/\d{2}$/.test(dateStr)) {
+                const [y, m, d] = dateStr.split('/');
+                return `${d}-${m}-${y}`;
+            }
+            // Case 3: DD/MM/YYYY
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+                return dateStr.replace(/\//g, '-');
+            }
+            // Case 4: DD-MM-YYYY
+            if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+                return dateStr;
+            }
+            return dateStr;
+        }
+
         console.log(">>> AUTO DÒ SỐ VER 3.2 - ĐÃ KÍCH HOẠT TÍNH NĂNG CON MẮT <<<");
 
         // --- TÍNH NĂNG ẨN/HIỆN MẬT KHẨU (GLOBAL) ---
@@ -1383,7 +1408,7 @@ Trả về định dạng JSON chính xác như sau:
                                     </div>
                                     <div style="display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--text-muted);">
                                         <span><i class="fa-solid fa-map-location-dot" style="color: #38bdf8; width: 14px;"></i> ${res.foundProvinceName}</span>
-                                        <span><i class="fa-solid fa-calendar-day" style="color: #a78bfa; width: 14px;"></i> ${res.date || '??/??/????'}</span>
+                                        <span><i class="fa-solid fa-calendar-day" style="color: #a78bfa; width: 14px;"></i> ${normalizeDateToDDMMYYYY(res.date) || '??-??-????'}</span>
                                     </div>
                                     <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 5px; border-radius: 8px;">
                                         <span style="font-size: 13px; font-weight: 700; color: white; letter-spacing: 0.5px;">SỐ LƯỢNG:</span> 
@@ -1446,11 +1471,7 @@ Trả về định dạng JSON chính xác như sau:
                                 return;
                             }
 
-                            let formattedDate = res.date;
-                            if (res.date.includes('/')) {
-                                const parts = res.date.split('/');
-                                formattedDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
-                            }
+                            let formattedDate = normalizeDateToDDMMYYYY(res.date);
 
                             btn.disabled = true;
                             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -1493,7 +1514,7 @@ Trả về định dạng JSON chính xác như sau:
                                     let finalSo = String(inputNumber).trim();
                                     if (finalSo.length < 6) finalSo = finalSo.padStart(6, '0');
 
-                                    let formattedDate = res.date.includes('/') ? res.date.replace(/\//g, '-') : res.date;
+                                    let formattedDate = normalizeDateToDDMMYYYY(res.date);
                                     await checkAndAddTicket(finalSo, formattedDate, res.foundProvinceId, res.foundProvinceName, parseInt(inputQty) || 1);
                                 }
                             }
@@ -1668,19 +1689,8 @@ Trả về định dạng JSON chính xác như sau:
                         const blockTickets = block.danh_sách_vé;
                         if (!info || !blockTickets) return;
 
-                        // 1. Phân tách Ngày (DD-MM-YYYY -> YYYY-MM-DD)
-                        let formattedDate = info.ngày_mở_thưởng;
-                        if (formattedDate.includes('-')) {
-                            const parts = formattedDate.split('-');
-                            if (parts[0].length !== 4) { // Nếu không phải YYYY-MM-DD (ví dụ DD-MM-YYYY)
-                                formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            }
-                        } else if (formattedDate.includes('/')) {
-                            const parts = formattedDate.split('/');
-                            if (parts[0].length !== 4) {
-                                formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            }
-                        }
+                        // 1. Chuẩn hóa ngày về DD-MM-YYYY
+                        let formattedDate = normalizeDateToDDMMYYYY(info.ngày_mở_thưởng);
 
                         // 2. Tìm Tỉnh cho khối này
                         let provinceId = null;
@@ -2130,6 +2140,7 @@ Trả về định dạng JSON chính xác như sau:
             // --- HÀM GỘP VÉ TRÙNG LẶP ---
             // --- HÀM GỘP VÉ TRÙNG LẶP ---
             async function checkAndAddTicket(number, date, tinhId, tinhName, sl) {
+                const normalizedDate = normalizeDateToDDMMYYYY(date);
                 try {
                     const snapshot = await get(ticketsRef);
                     const data = snapshot.val();
@@ -2138,7 +2149,8 @@ Trả về định dạng JSON chính xác như sau:
 
                     if (data) {
                         for (const [key, t] of Object.entries(data)) {
-                            if (t.number === number && t.date === date && String(t.tinh) === String(tinhId) && t.status === 'pending') {
+                            const tDateNormalized = normalizeDateToDDMMYYYY(t.date);
+                            if (t.number === number && tDateNormalized === normalizedDate && String(t.tinh) === String(tinhId) && t.status === 'pending') {
                                 foundId = key;
                                 existingSl = parseInt(t.sl) || 1;
                                 break;
@@ -2149,14 +2161,15 @@ Trả về định dạng JSON chính xác như sau:
                     if (foundId) {
                         // Update số lượng thay vì tạo mới
                         await update(ref(db, `users/${currentUser}/tickets/${foundId}`), {
-                            sl: existingSl + sl
+                            sl: existingSl + sl,
+                            date: normalizedDate
                         });
                     } else {
                         // Tạo mới nếu không trùng
                         await push(ticketsRef, {
                             number: number,
                             sl: sl,
-                            date: date,
+                            date: normalizedDate,
                             tinh: tinhId,
                             tinhName: tinhName,
                             status: 'pending',
@@ -2209,8 +2222,9 @@ Trả về định dạng JSON chính xác như sau:
                 // --- GỘP VÉ THEO NGÀY ĐỂ HIỂN THỊ (COLLAPSIBLE) ---
                 const grouped = {};
                 entries.forEach(([id, t]) => {
-                    if (!grouped[t.date]) grouped[t.date] = [];
-                    grouped[t.date].push({ id, ...t });
+                    const normalizedDate = normalizeDateToDDMMYYYY(t.date);
+                    if (!grouped[normalizedDate]) grouped[normalizedDate] = [];
+                    grouped[normalizedDate].push({ id, ...t });
                 });
 
                 // Lấy danh sách trạng thái thu gọn từ localStorage
@@ -2256,7 +2270,7 @@ Trả về định dạng JSON chính xác như sau:
                         div.innerHTML = `
                             <div class="ticket-info">
                                 <h3>${ticket.number} ${ticket.sl > 1 ? `<span style="font-size: 14px; opacity: 0.7; font-weight: 400;">x${ticket.sl}</span>` : ''}</h3>
-                                <p>${ticket.tinhName} | ${ticket.date}</p>
+                                <p>${ticket.tinhName} | ${normalizeDateToDDMMYYYY(ticket.date)}</p>
                                 ${ticket.result_detail ? `<p style="color:var(--success); font-weight:600; font-size:12px; margin-top:8px; line-height:1.5; white-space:pre-wrap; background:rgba(16, 185, 129, 0.05); padding:8px; border-radius:8px; border-left:3px solid var(--success);">${ticket.result_detail}</p>` : ''}
                             </div>
                             <div class="ticket-status">
