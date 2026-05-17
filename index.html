@@ -1207,7 +1207,11 @@ Trả về định dạng JSON chính xác như sau:
         function cleanResultDetail(detail) {
             if (!detail) return "";
             return detail.split('\n')
-                .map(line => line.trim())
+                .map(line => {
+                    let cleaned = line.replace(/^(&nbsp;|\s|\u00a0)+/g, '');
+                    cleaned = cleaned.replace(/(&nbsp;|\s|\u00a0)+$/g, '');
+                    return cleaned;
+                })
                 .filter(line => line)
                 .join('\n');
         }
