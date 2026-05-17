@@ -1210,6 +1210,9 @@ Trả về định dạng JSON chính xác như sau:
                 .map(line => {
                     let cleaned = line.replace(/^(&nbsp;|\s|\u00a0)+/g, '');
                     cleaned = cleaned.replace(/(&nbsp;|\s|\u00a0)+$/g, '');
+                    // Rút ngắn text thành 1 hàng duy nhất không bị trôi/xuống dòng
+                    cleaned = cleaned.replace(/Vé (số )?của bạn đã trúng thưởng/gi, 'Trúng');
+                    cleaned = cleaned.replace(/Tổng giá trị giải thưởng là:/gi, 'Tổng giải:');
                     return cleaned;
                 })
                 .filter(line => line)
