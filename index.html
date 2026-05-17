@@ -1631,6 +1631,12 @@ Trả về định dạng JSON chính xác như sau:
                         nicknameInput.value = settings.nickname;
                         userNickname = settings.nickname;
                         localStorage.setItem('user_nickname', userNickname);
+
+                        // Cập nhật lại tiêu đề popup nếu popup đang mở
+                        const titleEl = document.getElementById('winNotificationTitle');
+                        if (titleEl) {
+                            titleEl.innerText = `Chúc Mừng ${userNickname} !`;
+                        }
                     }
                 }
             });
