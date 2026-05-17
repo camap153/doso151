@@ -1195,6 +1195,14 @@ Trả về định dạng JSON chính xác như sau:
             }
             return dateStr;
         }
+        // --- UTILITY: DỌN DẸP CHI TIẾT KẾT QUẢ DÒ VÉ ---
+        function cleanResultDetail(detail) {
+            if (!detail) return "";
+            return detail.split('\n')
+                .map(line => line.trim())
+                .filter(line => line)
+                .join('\n');
+        }
 
         console.log(">>> AUTO DÒ SỐ VER 3.2 - ĐÃ KÍCH HOẠT TÍNH NĂNG CON MẮT <<<");
 
@@ -2322,7 +2330,7 @@ Trả về định dạng JSON chính xác như sau:
                             <div class="ticket-info">
                                 <h3>${ticket.number} ${ticket.sl > 1 ? `<span style="font-size: 14px; opacity: 0.7; font-weight: 400;">x${ticket.sl}</span>` : ''}</h3>
                                 <p>${ticket.tinhName} | ${normalizeDateToDDMMYYYY(ticket.date)}</p>
-                                ${ticket.result_detail ? `<p style="color:var(--success); font-weight:600; font-size:12px; margin-top:8px; line-height:1.5; white-space:pre-wrap; background:rgba(16, 185, 129, 0.05); padding:8px; border-radius:8px; border-left:3px solid var(--success);">${ticket.result_detail}</p>` : ''}
+                                ${ticket.result_detail ? `<p style="color:var(--success); font-weight:600; font-size:12px; margin-top:8px; line-height:1.5; white-space:pre-wrap; background:rgba(16, 185, 129, 0.05); padding:8px; border-radius:8px; border-left:3px solid var(--success);">${cleanResultDetail(ticket.result_detail)}</p>` : ''}
                             </div>
                             <div class="ticket-status">
                                 ${statusBadge}
@@ -2412,7 +2420,7 @@ Trả về định dạng JSON chính xác như sau:
                             Đài: ${ticket.tinhName} | Ngày: ${normalizeDateToDDMMYYYY(ticket.date)}
                         </div>
                         <div style="color: #4ade80; font-size: 13px; font-weight: 700; background: rgba(16, 185, 129, 0.05); padding: 8px; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 6px; white-space: pre-wrap; line-height: 1.4;">
-                            ${ticket.result_detail || 'Trúng giải!'}
+                            ${cleanResultDetail(ticket.result_detail) || 'Trúng giải!'}
                         </div>
                     `;
                     container.appendChild(card);
