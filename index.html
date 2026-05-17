@@ -834,6 +834,17 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 20px;">
+                        <label>Biệt danh (Hiển thị lời chúc) <i class="fa-solid fa-circle-info"
+                                style="font-size: 10px; opacity: 0.5;"
+                                title="Nhập biệt danh của bạn để hiển thị trong thông báo chúc mừng trúng thưởng"></i></label>
+                        <div style="position: relative;">
+                            <i class="fa-solid fa-signature" style="top: 13px;"></i>
+                            <input type="text" id="nicknameInput" class="form-control" style="padding-left: 40px;"
+                                placeholder="Ví dụ: Phượng Hoàng, Cá Mập...">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
                         <label>Bark Key (iOS Notification) <i class="fa-solid fa-circle-info"
                                 style="font-size: 10px; opacity: 0.5;"
                                 title="Dùng để nhận thông báo trúng giải riêng trên iPhone của bạn"></i></label>
@@ -1603,16 +1614,24 @@ Trả về định dạng JSON chính xác như sau:
             };
 
             // --- BARK SETTINGS LOGIC ---
+            let userNickname = localStorage.getItem('user_nickname') || "";
             const btnOpenSettings = document.getElementById('btnOpenSettings');
             const settingsModal = document.getElementById('settingsModal');
             const btnSaveSettings = document.getElementById('btnSaveSettings');
             const barkKeyInput = document.getElementById('barkKeyInput');
+            const nicknameInput = document.getElementById('nicknameInput');
             const closeSettings = document.querySelector('.close-settings');
 
-            // Load Bark Key từ node của User
-            get(child(ref(db), `users/${user}/settings/bark_key`)).then((snapshot) => {
+            // Load Settings từ node của User
+            get(child(ref(db), `users/${user}/settings`)).then((snapshot) => {
                 if (snapshot.exists()) {
-                    barkKeyInput.value = snapshot.val();
+                    const settings = snapshot.val();
+                    if (settings.bark_key) barkKeyInput.value = settings.bark_key;
+                    if (settings.nickname) {
+                        nicknameInput.value = settings.nickname;
+                        userNickname = settings.nickname;
+                        localStorage.setItem('user_nickname', userNickname);
+                    }
                 }
             });
 
@@ -1622,12 +1641,15 @@ Trả về định dạng JSON chính xác như sau:
 
             btnSaveSettings.onclick = async () => {
                 const newKey = barkKeyInput.value.trim();
+                const newNickname = nicknameInput.value.trim();
                 localStorage.setItem('bark_key', newKey);
+                localStorage.setItem('user_nickname', newNickname);
 
                 // Sync to Firebase
                 try {
                     const updates = {};
                     updates['users/' + user + '/settings/bark_key'] = newKey;
+                    updates['users/' + user + '/settings/nickname'] = newNickname;
                     updates['users/' + user + '/settings/lastUpdated'] = Date.now();
                     // Cũng lưu bản copy vào fcm_tokens cho vps_checker dễ quét
                     const deviceId = btoa(navigator.userAgent).substring(0, 20);
@@ -1635,7 +1657,9 @@ Trả về định dạng JSON chính xác như sau:
 
                     await update(ref(db), updates);
 
-                    alert("Đã lưu và đồng bộ cấu hình Bark Key!");
+                    userNickname = newNickname; // Cập nhật biến memory
+
+                    alert("Đã lưu và đồng bộ cài đặt thành công!");
                     settingsModal.style.display = "none";
                 } catch (err) {
                     console.error("Sync error:", err);
@@ -2423,10 +2447,10 @@ Trả về định dạng JSON chính xác như sau:
                 const container = document.getElementById('winTicketsContainer');
                 container.innerHTML = '';
 
-                // Hiển thị tên động: Chúc Mừng <Tên người dùng> !
+                // Hiển thị tên động: Chúc Mừng <Biệt danh / Tên người dùng> !
                 const titleEl = document.getElementById('winNotificationTitle');
                 if (titleEl) {
-                    const formattedName = currentUser === 'phuongbao' ? 'Phương Bảo' : (currentUser.charAt(0).toUpperCase() + currentUser.slice(1));
+                    const formattedName = userNickname ? userNickname : (currentUser === 'phuongbao' ? 'Phương Bảo' : (currentUser.charAt(0).toUpperCase() + currentUser.slice(1)));
                     titleEl.innerText = `Chúc Mừng ${formattedName} !`;
                 }
 
