@@ -2409,7 +2409,7 @@ Trả về định dạng JSON chính xác như sau:
             });
 
             // --- LOGIC THÔNG BÁO VÉ TRÚNG THƯỞNG ---
-            let winNotifiedThisSession = sessionStorage.getItem('win_notified_session') === 'true';
+            let winNotifiedThisSession = false;
 
             function showWinningModal(winningTickets) {
                 const modal = document.getElementById('winNotificationModal');
@@ -2486,7 +2486,6 @@ Trả về định dạng JSON chính xác như sau:
                     if (winningTickets.length > 0) {
                         showWinningModal(winningTickets);
                         winNotifiedThisSession = true;
-                        sessionStorage.setItem('win_notified_session', 'true');
                     }
                 }
             });
